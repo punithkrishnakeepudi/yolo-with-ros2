@@ -1,0 +1,6 @@
+ultralytics
+opencv-python
+cv_bridge
+rclpy
+sensor_msgs
+std_msgs
