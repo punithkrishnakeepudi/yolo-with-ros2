@@ -61,7 +61,7 @@ class ROSListener(Node):
             rgb_img = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
             h, w, c = rgb_img.shape
             bytes_per_line = c * w
-            qt_img = QImage(rgb_img.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
+            qt_img = QImage(rgb_img.data, w, h, bytes_per_line, QImage.Format.Format_RGB888).copy()
             # Emit signal to update UI
             self.pyqt_app_node.update_image_signal.emit(qt_img)
         except Exception as e:
