@@ -87,6 +87,13 @@ class SmartRobotUI(QMainWindow):
         self.setMinimumSize(800, 700)
         
         self.mode = "MENU" # MENU, YOLO, CONTROL
+        
+        # Initialize ROS before setting up views
+        rclpy.init()
+        self.ros_node = ROSListener(self)
+        self.thread = threading.Thread(target=rclpy.spin, args=(self.ros_node,), daemon=True)
+        self.thread.start()
+
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
 
@@ -97,12 +104,6 @@ class SmartRobotUI(QMainWindow):
 
         # Connect signals
         self.update_image_signal.connect(self.display_image)
-
-        # Initialize ROS
-        rclpy.init()
-        self.ros_node = ROSListener(self)
-        self.thread = threading.Thread(target=rclpy.spin, args=(self.ros_node,), daemon=True)
-        self.thread.start()
 
     def setup_menu_view(self):
         self.menu_widget = QWidget()
