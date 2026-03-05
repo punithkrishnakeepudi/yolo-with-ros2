@@ -12,12 +12,38 @@ class YOLOProcessor(Node):
         self.br = CvBridge()
         self.model = YOLO('yolov8n.pt')
         
-        # Create a reverse mapping and normalize names
-        self.name_to_id = {v.lower().strip(): k for k, v in self.model.names.items()}
+        # Internal model names mapping
+        model_names = {v.lower().replace(" ", ""): k for k, v in self.model.names.items()}
         
+        # Manual overrides for discrepancies between user list and common model labels
+        # (motorcycle/motorbike, couch/sofa, etc.)
+        self.manual_mapping = {
+            'motorbike': 3,     # motorcycle
+            'motorcycle': 3,
+            'aeroplane': 4,      # airplane
+            'airplane': 4,
+            'sofa': 57,         # couch
+            'couch': 57,
+            'pottedplant': 58,  # potted plant
+            'potted plant': 58,
+            'diningtable': 60,  # dining table
+            'dining table': 60,
+            'tvmonitor': 62,    # tv
+            'tv': 62
+        }
+        
+        # Prepare final mapping: check manual first, then fallback to model_names
+        self.name_to_id = {}
+        all_possible_names = list(model_names.keys()) + list(self.manual_mapping.keys())
+        
+        for name in all_possible_names:
+            if name in self.manual_mapping:
+                self.name_to_id[name] = self.manual_mapping[name]
+            elif name in model_names:
+                self.name_to_id[name] = model_names[name]
+
         # Default target
         self.target_id = 0 # person
-        self.target_class_name = "person"
         
         # Subscriptions
         self.raw_image_sub = self.create_subscription(
@@ -29,19 +55,26 @@ class YOLOProcessor(Node):
         # Publisher
         self.yolo_output_pub = self.create_publisher(Image, '/camera/yolo_output', 10)
         
-        self.get_logger().info('YOLO Processor Backend Started. Defaulting to: person')
+        self.get_logger().info('YOLO Processor Backend Started. Enhanced for 80 COCO classes.')
 
     def target_class_callback(self, msg):
-        requested_name = msg.data.lower().strip()
+        requested_name = msg.data.lower().strip().replace(" ", "")
         if requested_name in self.name_to_id:
             self.target_id = self.name_to_id[requested_name]
-            self.target_class_name = requested_name
-            self.get_logger().info(f'Switching YOLO target to: {requested_name} (ID: {self.target_id})')
+            self.get_logger().info(f'Switching YOLO target to: {msg.data} (ID: {self.target_id})')
         else:
-            self.get_logger().warn(f'Requested class "{requested_name}" not found in model names.')
+            # Fallback: try to see if any model name contains the requested string
+            found = False
+            for m_name, m_id in self.model.names.items():
+                if requested_name in m_name.lower().replace(" ", ""):
+                    self.target_id = m_id
+                    self.get_logger().info(f'Fuzzy match: {msg.data} -> {m_name} (ID: {self.target_id})')
+                    found = True
+                    break
+            if not found:
+                self.get_logger().warn(f'Requested class "{msg.data}" not found in mapping.')
 
     def image_callback(self, data):
-        # Skip if no UI is watching
         if self.yolo_output_pub.get_subscription_count() == 0:
             return
 
@@ -51,15 +84,13 @@ class YOLOProcessor(Node):
             self.get_logger().error(f'Failed to convert ROS Image: {e}')
             return
 
-        # Perform Inference - SPECIFICALLY track only the target class
-        # This is more efficient and handles name discrepancies correctly
+        # Perform Inference - filter by the specific target_id
         results = self.model(cv_image, verbose=False, classes=[self.target_id])
         
-        # Draw results on frame
-        # If there are detections, plot them. If not, results.plot() returns clean frame.
+        # Draw results
         annotated_frame = results[0].plot()
 
-        # Convert back to ROS and publish
+        # Publish
         try:
             output_msg = self.br.cv2_to_imgmsg(annotated_frame, encoding="bgr8")
             self.yolo_output_pub.publish(output_msg)
