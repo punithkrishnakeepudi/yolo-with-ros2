@@ -15,8 +15,8 @@ setup(
     zip_safe=True,
     maintainer='punith',
     maintainer_email='punithkrishna147@gmail.com',
-    description='TODO: Package description',
-    license='TODO: License declaration',
+    description='Real-time YOLOv8 object detection pipeline for ROS2 Jazzy',
+    license='MIT',
     extras_require={
         'test': [
             'pytest',

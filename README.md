@@ -1,94 +1,132 @@
-# Smart Robot ROS2 Pipeline (Jazzy)
+# 🤖 Smart Robot: Real-Time YOLOv8 ROS2 Pipeline
 
-This project implements a real-time object detection pipeline for a robot using **ROS2 Jazzy**, **OpenCV**, and **YOLOv8**. It is split into two modular nodes to demonstrate the power of ROS2 messaging.
+[![ROS2 Jazzy](https://img.shields.io/badge/ROS2-Jazzy-blue?style=for-the-badge&logo=ros)](https://docs.ros.org/en/jazzy/)
+[![Python](https://img.shields.io/badge/Python-3.12+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Ubuntu 24.04](https://img.shields.io/badge/OS-Ubuntu%2024.04-E95420?style=for-the-badge&logo=ubuntu&logoColor=white)](https://ubuntu.com/)
 
-## 🚀 Overview
-
-The pipeline consists of:
-
-1. **Camera Publisher (`camera_publisher`)**:
-    - Captures frames from the system webcam using OpenCV.
-    - Converts OpenCV images to ROS2 Image messages (`sensor_msgs/Image`).
-    - Publishes them to the `/camera/image_raw` topic.
-2. **YOLO Detector (`yolo_detector`)**:
-    - Subscribes to the `/camera/image_raw` topic.
-    - Processes each incoming frame through the **YOLOv8 nano** model.
-    - Annotates the frame with detection boxes and labels.
-    - Displays the output in a real-time window.
+A high-performance, modular ROS2 pipeline for real-time object detection using **YOLOv8** and **OpenCV**. Designed for **ROS2 Jazzy Apache**, this project demonstrates a clean producer-consumer architecture for robotic vision systems.
 
 ---
 
-## 🛠️ Installation & Setup
+## 🌟 Key Features
 
-### 1. System Dependencies
+* **Modular Architecture**: Decoupled nodes for image acquisition and AI inference.
+* **Real-Time Processing**: Optimized for low-latency video streaming and detection.
+* **YOLOv8 Integration**: Uses state-of-the-art object detection via the `ultralytics` framework.
+* **Customizable**: Easily swap models (Nano, Small, Medium, Large) or change camera sources.
+* **Standardized Messaging**: Uses standard `sensor_msgs/Image` for broad compatibility.
 
-Ensure you have **ROS2 Jazzy** installed on your Ubuntu 24.04 system. You will also need `colcon` to build the workspace.
+---
 
-### 2. Python Dependencies
+## 📐 System Architecture
 
-The project requires `ultralytics` for YOLOv8 and `opencv-python`. Since Ubuntu 24.04 (Jazzy's base) uses a managed environment, run the following command to install them:
+The pipeline follows a classic ROS2 publisher-subscriber pattern:
 
-```bash
-pip install ultralytics "numpy<2.0.0" "opencv-python<4.10.0" --break-system-packages
+```mermaid
+graph LR
+    A[Webcam / Camera Source] -->|OpenCV| B(Camera Publisher Node)
+    B -->|/camera/image_raw| C(YOLO Detector Node)
+    C -->|Inference| D[Annotated Display Window]
+    
+    style B fill:#f96,stroke:#333,stroke-width:2px
+    style C fill:#69f,stroke:#333,stroke-width:2px
 ```
 
-> **Note**: We specifically use `numpy<2.0.0` to maintain compatibility with ROS2 Jazzy's pre-compiled libraries.
+---
+
+## 🛠️ Prerequisites
+
+### System Requirements
+
+* **Ubuntu 24.04 LTS** (or compatible Linux distribution)
+* **ROS2 Jazzy Apache** installed
+
+### Python Dependencies
+
+Install the required libraries to ensure the AI model can run:
+
+```bash
+# Recommended for Ubuntu 24.04 (PEP 668 compatibility)
+pip install ultralytics "numpy<2.0.0" "opencv-python<4.10.0" --break-system-packages
+```
 
 ---
 
 ## 🏗️ Building the Workspace
 
-Clone the repository and build the package:
+1. **Clone and Navigate**:
 
-```bash
-# Navigate to your workspace
-cd ~/Documents/ros2/smart-robot
+    ```bash
+    cd ~/Documents/ros2/smart-robot
+    ```
 
-# Build the package
-source /opt/ros/jazzy/setup.bash
-colcon build --symlink-install --packages-select yolo_pipeline
-```
+2. **Source ROS2 Environment**:
+
+    ```bash
+    source /opt/ros/jazzy/setup.bash
+    ```
+
+3. **Build with Colcon**:
+
+    ```bash
+    colcon build --symlink-install --packages-select yolo_pipeline
+    ```
 
 ---
 
-## 🚦 How to Run
+## 🚦 Getting Started
 
-To run the pipeline, you need to open two separate terminals.
+To run the pipeline, you will need two separate terminal sessions.
 
-### Terminal 1: Camera Feed
+### 1️⃣ Start the Camera Stream
 
-Starts the webcam capture and begins broadcasting the video stream over the ROS2 network.
+This node captures video from your default camera and publishes it to the ROS2 network.
 
 ```bash
-source /opt/ros/jazzy/setup.bash
 source install/setup.bash
 ros2 run yolo_pipeline camera_publisher
 ```
 
-### Terminal 2: AI Detection
+### 2️⃣ Launch YOLO Detection
 
-Starts the subcriber node which applies YOLOv8 to the incoming stream.
+This node listens to the camera stream, detects objects, and displays the results.
 
 ```bash
-source /opt/ros/jazzy/setup.bash
 source install/setup.bash
 ros2 run yolo_pipeline yolo_detector
 ```
 
-*On the first run, it will automatically download the `yolov8n.pt` model weights.*
+> **Tip**: On the first run, the detector will automatically download the `yolov8n.pt` model weights from the Ultralytics servers.
 
 ---
 
 ## 📂 Project Structure
 
-- `yolo_pipeline/camera_publisher.py`: Node logic for image acquisition.
-- `yolo_pipeline/yolo_detector.py`: Node logic for AI inference and visualization.
-- `setup.py`: Defines entry points and package metadata.
-- `package.xml`: Management of ROS2 dependencies (rclpy, sensor_msgs, etc.).
+```text
+smart-robot/
+├── src/
+│   └── yolo_pipeline/
+│       ├── yolo_pipeline/
+│       │   ├── __init__.py
+│       │   ├── camera_publisher.py  # Image acquisition node
+│       │   └── yolo_detector.py     # AI inference node
+│       ├── package.xml              # Package dependencies
+│       ├── setup.py                 # Build entry points
+│       └── README.md                # Package specific docs
+├── yolov8n.pt                        # YOLOv8 weights (downloaded on first run)
+└── README.md                         # Project overview (this file)
+```
 
 ---
 
-## 📝 Tips
+## 📝 Usage Tips
 
-- Press **'q'** in the YOLO detection window to stop the display (the node will continue running).
-- Use `ros2 topic hz /camera/image_raw` in a third terminal to check the frequency of your video stream!
+* **Keyboard Controls**: Press `q` in the detection window to close the visualization.
+* **Performance Monitoring**: Run `ros2 topic hz /camera/image_raw` to monitor the FPS.
+* **Changing Models**: Edit `yolo_detector.py` and update the model path (e.g., to `yolov8s.pt` for better accuracy).
+
+---
+
+## 🤝 Contributing
+
+Feel free to open issues or submit pull requests to improve the pipeline! 🚀
