@@ -12,15 +12,14 @@ class YOLOProcessor(Node):
         self.br = CvBridge()
         self.model = YOLO('yolov8n.pt')
         
-        # Internal model names mapping
+        # Internal model names mapping (normalized: no spaces, lowercase)
         model_names = {v.lower().replace(" ", ""): k for k, v in self.model.names.items()}
         
-        # Manual overrides for discrepancies between user list and common model labels
-        # (motorcycle/motorbike, couch/sofa, etc.)
+        # Manual overrides for discrepancies between user list and YOLOv8 labels
         self.manual_mapping = {
             'motorbike': 3,     # motorcycle
             'motorcycle': 3,
-            'aeroplane': 4,      # airplane
+            'aeroplane': 4,     # airplane
             'airplane': 4,
             'sofa': 57,         # couch
             'couch': 57,
@@ -43,7 +42,7 @@ class YOLOProcessor(Node):
                 self.name_to_id[name] = model_names[name]
 
         # Default target
-        self.target_id = 0 # person
+        self.target_id = 0  # person
         
         # Subscriptions
         self.raw_image_sub = self.create_subscription(
@@ -65,7 +64,7 @@ class YOLOProcessor(Node):
         else:
             # Fallback: try to see if any model name contains the requested string
             found = False
-            for m_name, m_id in self.model.names.items():
+            for m_id, m_name in self.model.names.items():
                 if requested_name in m_name.lower().replace(" ", ""):
                     self.target_id = m_id
                     self.get_logger().info(f'Fuzzy match: {msg.data} -> {m_name} (ID: {self.target_id})')
@@ -75,9 +74,6 @@ class YOLOProcessor(Node):
                 self.get_logger().warn(f'Requested class "{msg.data}" not found in mapping.')
 
     def image_callback(self, data):
-        if self.yolo_output_pub.get_subscription_count() == 0:
-            return
-
         try:
             cv_image = self.br.imgmsg_to_cv2(data, desired_encoding="bgr8")
         except Exception as e:
@@ -106,7 +102,10 @@ def main(args=None):
         pass
     finally:
         yolo_processor.destroy_node()
-        rclpy.shutdown()
+        try:
+            rclpy.shutdown()
+        except Exception:
+            pass
 
 if __name__ == '__main__':
     main()
