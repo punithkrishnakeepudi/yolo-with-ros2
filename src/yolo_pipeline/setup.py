@@ -25,7 +25,8 @@ setup(
     entry_points={
         'console_scripts': [
             'camera_publisher = yolo_pipeline.camera_publisher:main',
-            'yolo_detector = yolo_pipeline.yolo_detector:main',
+            'yolo_processor = yolo_pipeline.yolo_processor:main',
+            'ui_node = yolo_pipeline.ui_node:main',
         ],
     },
 )

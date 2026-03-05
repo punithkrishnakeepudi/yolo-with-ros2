@@ -6,16 +6,16 @@ This project is an advanced real-time object detection and robot control pipelin
 
 The pipeline is split into three modular ROS2 nodes:
 
-1. **Node 1: Camera Publisher (`camera_publisher`)**:
+1. **Camera Publisher (`camera_publisher`)**:
     - Captures raw webcam feed.
     - Publishes to `/camera/image_raw`.
 
-2. **Node 2: YOLO Processor Backend (`yolo_processor`)**:
+2. **YOLO Processor Backend (`yolo_processor`)**:
     - Listens for a **Target Class** from the UI.
     - Applies YOLOv8 to the raw feed, filtering only for that specific class.
     - Publishes the annotated AI feed to `/camera/yolo_output`.
 
-3. **Node 3: UI Controller Node (`ui_node`)**:
+3. **UI Controller Node (`ui_node`)**:
     - Built using **PyQt6**.
     - **Control Mode**: Displays a direct low-latency raw feed. Includes buttons for FWD, BACK, LEFT, RIGHT, and STOP. Commands are sent to `/cmd_vel`.
     - **YOLO Mode**: Displays the AI-annotated feed. Features a dropdown with **80 COCO Classes** (person, car, cat, etc.) for real-time tracking.
